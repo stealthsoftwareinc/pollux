@@ -1,0 +1,292 @@
+#
+# Copyright (C) 2025 Stealth Software Technologies, Inc.
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice (including
+# the next paragraph) shall be included in all copies or
+# substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# SPDX-License-Identifier: MIT
+#
+
+name: Build release
+
+on:
+  schedule:
+    - cron: "0 0 1,15 * *"
+  workflow_dispatch:
+
+jobs:
+
+  get-date:
+    name: Get date
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Get date
+        id: get
+        run: |
+          set -E -e -u -o pipefail || exit $?
+          trap exit ERR
+          set -x
+          v=$(date -u +%Y-%m-%d)
+          printf '%s\n' v=$v >>$GITHUB_OUTPUT
+    outputs:
+      v: ${{ steps.get.outputs.v }}
+
+  get-divvi-up-app-version:
+    name: Get Divvi Up application version
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Get Divvi Up application version
+        id: get
+        run: |
+          set -E -e -u -o pipefail || exit $?
+          trap exit ERR
+          set -x
+          git clone https://github.com/divviup/divviup-api.git
+          cd divviup-api
+          v=$(git describe --tags --abbrev=0)
+          printf '%s\n' v=$v >>$GITHUB_OUTPUT
+    outputs:
+      v: ${{ steps.get.outputs.v }}
+
+  get-divvi-up-agg-version:
+    name: Get Divvi Up aggregator version
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Get Divvi Up aggregator version
+        id: get
+        run: |
+          set -E -e -u -o pipefail || exit $?
+          trap exit ERR
+          set -x
+          git clone https://github.com/divviup/janus.git
+          cd janus
+          v=$(git describe --tags --abbrev=0)
+          printf '%s\n' v=$v >>$GITHUB_OUTPUT
+    outputs:
+      v: ${{ steps.get.outputs.v }}
+
+  create-divvi-up-artifact:
+    name: Create Divvi Up artifact
+    needs:
+      - get-date
+      - get-divvi-up-app-version
+      - get-divvi-up-agg-version
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Get directory name
+        id: get-dir
+        run: |
+          v=${{ needs.get-date.outputs.v }}
+          dir=pollux-$v-divvi-up
+          printf '%s\n' dir=$dir >>$GITHUB_OUTPUT
+      - name: Create artifact
+        run: |
+          set -E -e -u -o pipefail || exit $?
+          trap exit ERR
+          set -x
+          dir=${{ steps.get-dir.outputs.dir }}
+          app=${{ needs.get-divvi-up-app-version.outputs.v }}
+          agg=${{ needs.get-divvi-up-agg-version.outputs.v }}
+          mv src/divvi-up $dir
+          sed -i "
+            /DIVVIUP/ s|:latest\$|:$app|
+            /JANUS/ s|:latest\$|:$agg|
+          " $dir/*/.env
+          tar czf $dir.tar.gz $dir
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.get-dir.outputs.dir }}
+          path: ${{ steps.get-dir.outputs.dir }}.tar.gz
+
+  test-divvi-up-artifact:
+    name: Test Divvi Up artifact
+    needs:
+      - create-divvi-up-artifact
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Download Divvi Up artifact
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - name: Test Divvi Up artifact
+        run: |
+          set -E -e -u -o pipefail || exit $?
+          trap exit ERR
+          set -x
+
+          tar xzf pollux-*-divvi-up.tar.gz
+          cd pollux-*-divvi-up/
+
+          mv aggregator leader
+          cp -R leader helper
+
+          cd application
+          sh generate-keys.sh
+          docker compose create
+          docker compose start
+          cd ..
+
+          cd leader
+          sh generate-keys.sh
+          sed -i.bak '
+            /^AGGREGATOR_API_AUTH_TOKENS=/ s/=.*/=token1/
+          ' .env
+          docker compose create
+          docker compose start
+          cd ..
+
+          cd helper
+          sh generate-keys.sh
+          sed -i.bak '
+            /PORT_HTTP=/                   s/=.*/=9002/
+            /^AGGREGATOR_API_AUTH_TOKENS=/ s/=.*/=token2/
+          ' .env
+          docker compose create
+          docker compose start
+          cd ..
+
+          cd application
+
+          url=http://127.0.0.2:8080
+
+          docker compose exec divviup-api-http \
+            /divviup -u $url -t '' \
+              aggregator create \
+              --name=leader \
+              --api-url=http://host.docker.internal:9001/api \
+              --bearer-token=token1 \
+              --shared \
+              --first-party \
+          >leader.json
+          leader=$(jq -r .id leader.json)
+
+          docker compose exec divviup-api-http \
+            /divviup -u $url -t '' \
+              aggregator create \
+              --name=helper \
+              --api-url=http://host.docker.internal:9002/api \
+              --bearer-token=token2 \
+              --shared \
+          >helper.json
+          helper=$(jq -r .id helper.json)
+
+          docker compose exec divviup-api-http \
+            /divviup -u $url -t '' \
+              account create demo \
+          >account.json
+          account=$(jq -r .id account.json)
+
+          docker compose exec divviup-api-http \
+            /divviup -u $url -t '' -a $account \
+              collector-credential generate \
+          | sed '/^[^{} ]/ d' >collector.json
+          collector=$(jq -r -s '.[0].id' collector.json)
+          jq -s '.[1]' collector.json >credential.json
+
+          docker compose exec divviup-api-http \
+            /divviup -u $url -t '' -a $account \
+              task create \
+              --name net-promoter-score \
+              --leader-aggregator-id $leader \
+              --helper-aggregator-id $helper \
+              --collector-credential-id $collector \
+              --vdaf histogram \
+              --categorical-buckets 0,1,2,3,4,5,6,7,8,9,10 \
+              --min-batch-size 100 \
+              --max-batch-size 200 \
+              --time-precision 60sec \
+          >task.json
+          task=$(jq -r .id task.json)
+
+          i=0
+          while [ $i -lt 100 ]; do
+            m=$(($RANDOM % 10))
+            docker compose exec divviup-api-http \
+              /divviup -u $url -t '' -a $account \
+                dap-client upload \
+                --task-id $task \
+                --measurement $m \
+            ;
+            i=$((i + 1))
+          done
+
+          sleep 60
+
+          docker compose cp credential.json divviup-api-http:/
+          docker compose exec divviup-api-http \
+            /divviup -u $url -t '' -a $account \
+              dap-client collect \
+              --task-id $task \
+              --collector-credential-file /credential.json \
+              --current-batch \
+          >results.txt
+
+          cat results.txt
+
+          grep '^Number of reports: 100$' results.txt
+
+  create-release:
+    name: Create release
+    needs:
+      - get-date
+      - create-divvi-up-artifact
+      - test-divvi-up-artifact
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -E -e -u -o pipefail || exit $?
+          trap exit ERR
+          set -x
+          v=${{ needs.get-date.outputs.v }}
+          gh release create -n "$v release" $v pollux-*.tar.gz

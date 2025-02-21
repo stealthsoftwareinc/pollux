@@ -1,0 +1,54 @@
+/*
+// Copyright (C) 2025 Stealth Software Technologies, Inc.
+//
+// Permission is hereby granted, free of charge, to any person
+// obtaining a copy of this software and associated documentation
+// files (the "Software"), to deal in the Software without
+// restriction, including without limitation the rights to use,
+// copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the
+// Software is furnished to do so, subject to the following
+// conditions:
+//
+// The above copyright notice and this permission notice (including
+// the next paragraph) shall be included in all copies or
+// substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+// OTHER DEALINGS IN THE SOFTWARE.
+//
+// SPDX-License-Identifier: MIT
+*/
+
+main > section {
+  margin: 2rem 0;
+}
+
+:root {
+  --ifm-color-primary: #4a657d;
+  --ifm-color-primary-dark: #435b71;
+  --ifm-color-primary-darker: #3f566a;
+  --ifm-color-primary-darkest: #344758;
+  --ifm-color-primary-light: #516f8a;
+  --ifm-color-primary-lighter: #557490;
+  --ifm-color-primary-lightest: #6183a2;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #7c98b1;
+  --ifm-color-primary-dark: #6989a6;
+  --ifm-color-primary-darker: #6082a0;
+  --ifm-color-primary-darkest: #4f6b84;
+  --ifm-color-primary-light: #8fa7bc;
+  --ifm-color-primary-lighter: #98aec2;
+  --ifm-color-primary-lightest: #b5c5d3;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}

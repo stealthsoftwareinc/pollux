@@ -1,0 +1,56 @@
+---
+#
+# Copyright (C) 2025 Stealth Software Technologies, Inc.
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice (including
+# the next paragraph) shall be included in all copies or
+# substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# SPDX-License-Identifier: MIT
+#
+
+sidebar_position: 10
+---
+
+# Introduction
+
+Pollux provides tools for orchestrating various secure multi-party
+computation (MPC) systems.
+MPC is a general paradigm that enables accurate analytics on private
+data from multiple sources and derives its security through mathematical
+cryptography.
+It differs from, but can be combined with, other privacy approaches such
+as trusted hardware or differential privacy.
+An example of an MPC system is
+[Divvi Up](https://divviup.org/),
+which is a privacy-respecting telemetry service developed by the
+[Internet Security Research Group (ISRG)](https://abetterinternet.org/).
+
+In general, the tools provided by Pollux consist of
+[Docker Compose](https://docs.docker.com/compose/)
+files,
+[Terraform](https://www.terraform.io/)
+files, and helper shell scripts.
+The Docker Compose files provide the fundamental ability to deploy the
+MPC system's components on any Docker-enabled machine, the Terraform
+files allow the deployments to be hosted on cloud machines, and the
+helper shell scripts make it easier to configure certain parts of the
+deployment.
