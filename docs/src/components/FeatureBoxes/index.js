@@ -59,7 +59,7 @@ const list = [
       <>
         Pollux is designed for extensibility, seamlessly integrating
         with any Docker-enabled system and any cloud provider.
-        For complex more requirements, you can extend Pollux to fit your
+        For more complex requirements, you can extend Pollux to fit your
         needs.
       </>
     ),
