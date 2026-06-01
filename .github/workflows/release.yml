@@ -29,8 +29,8 @@
 name: Build release
 
 on:
-  schedule:
-    - cron: "38 2 1 * *"
+  #schedule:
+  #  - cron: "38 2 1 * *"
   workflow_dispatch:
 
 jobs:
